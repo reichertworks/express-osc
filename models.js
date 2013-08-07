@@ -49,7 +49,7 @@ exports.getTag = function(tagId, callback) {
 }
 
 exports.getTagsByPlanId = function(planId, callback) {
-  Tag.find({ _plan: planId }).run(function(err, tags) {
+  Tag.find({ _plan: planId }, null, null, function(err, tags) {
     callback(err, tags);
   });
 }
@@ -86,7 +86,7 @@ exports.deleteTag = function(tagId, callback) {
 }
 
 exports.getPlans = function(callback) {
-  Plan.find({}, ['id', 'name'], {}, function(err, plans) {
+  Plan.find({}, 'id name', {}, function(err, plans) {
     callback(err, plans);
   });
 }

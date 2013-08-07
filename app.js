@@ -5,16 +5,17 @@
 var express = require('express');
 var mongoose = require('mongoose');
 var connectTimeout = require('connect-timeout');
+var http = require('http');
 
 var models = require('./models');
 var Plan;
 var Tag;
 
-var app = module.exports = express.createServer();
+var app = express();
 
 // Configuration
-
 app.configure(function() {
+
   app.set('views', __dirname + '/views');
   app.set('view engine', 'jade');
   app.use(connectTimeout({ time: 10000 }));
@@ -22,6 +23,14 @@ app.configure(function() {
   app.use(express.cookieParser());
   app.use(express.session({ secret: 'topsecret', cookie: { maxAge: 3600000 }}));  // 1 hour expiration
   app.use(express.methodOverride());
+
+  app.use(function(req, res, next) {
+    res.locals.session = req.session;
+    res.locals.plans = req.plans;
+    res.locals.url = req.url;
+    next();
+  });
+
   app.use(app.router);
   app.use(express.static(__dirname + '/public'));
 });
@@ -39,26 +48,11 @@ app.configure('production', function() {
 
 // Helpers
 
-app.helpers({
-  appName: 'Office Seating Chart',
-  version: '0.1',
-
-  nameAndVersion: function(name, version) {
-    return name + ' v' + version;
-  }
-});
-
-app.dynamicHelpers({
-  session: function(req, res) {
-    return req.session;
-  },
-  plans: function(req, res) {
-    return req.plans;
-  },
-  url: function(req, res) {
-    return req.url;
-  }
-});
+app.locals.appName = 'Office Seating Chart';
+app.locals.version = '0.1';
+app.locals.nameAndVersion = function(name, version) {
+  return name + ' v' + version;
+};
 
 // Models initialization
 
@@ -73,7 +67,7 @@ models.defineModels(mongoose, function() {
 app.get('/plan|admin/*|/|/login', function(req, res, next) {
   models.getPlans(function(err, plans) {
     if (err) console.log(err);
-    req.plans = plans;
+    res.locals.plans = req.plans = plans;
     next();
   });
 });
@@ -230,6 +224,7 @@ app.get('/admin', function(req, res) {
 app.get('/', function(req, res) {
   if (req.plans.length == 0) {
     res.render('index', {
+      plans: [],
       title: 'Office Seating Chart'
     });
   } else {
@@ -237,5 +232,6 @@ app.get('/', function(req, res) {
   }
 });
 
-app.listen(process.argv.length > 2 ? process.argv[2] : 3000);
-console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
+var server = http.createServer(app);
+server.listen(3000);
+console.log("Express server listening on port %d in %s mode", server.address().port, app.settings.env);

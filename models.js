@@ -127,7 +127,7 @@ exports.deletePlan = function(planId, callback) {
   Plan.findById(planId, function(err, plan) {
     if (plan) {
       plan.remove(function(err) {
-        Tag.remove({ _plan: planId }).run(function(err) {
+        Tag.remove({ _plan: planId }, function(err) {
           callback(err);
         });
       });
